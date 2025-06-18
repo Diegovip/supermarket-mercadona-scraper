@@ -20,15 +20,12 @@ jobs:
 
       - name: Instalar dependencias
         run: pip install -r requirements.txt supabase
-        working-directory: supermarket-mercadona-scraper
 
       - name: Ejecutar scraper
         run: python scrape.py
-        working-directory: supermarket-mercadona-scraper
 
       - name: Subir a Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python upload_to_supabase.py
-        working-directory: supermarket-mercadona-scraper
