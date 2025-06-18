@@ -23,10 +23,10 @@ jobs:
         run: |
           pip install -r supermarket-mercadona-scraper/requirements.txt
 
-      - name: Ejecutar scraper
-        run: |
-          cd supermarket-mercadona-scraper
-          python scrape.py
+     - name: Ejecutar scraper
+  working-directory: ./supermarket-mercadona-scraper
+  run: |
+    python scrape.py
 
       - name: Subir datos a Supabase
         env:
