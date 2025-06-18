@@ -13,7 +13,7 @@ jobs:
           python-version: '3.11'
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
+        run: pip install -r supermarket-mercadona-scraper/requirements.txt
 
       - name: Ejecutar scraper
         run: python scrape.py
