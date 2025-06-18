@@ -1,31 +1,19 @@
-name: Scraper automático
-
-on:
-  schedule:
-    - cron: '0 6 * * *'  # cada día a las 6am
-  workflow_dispatch:
-
 jobs:
-  scrape:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+
+      - name: Listar carpeta raíz
+        run: ls -la
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt supabase
+        run: pip install -r requirements.txt
 
       - name: Ejecutar scraper
         run: python scrape.py
-
-      - name: Subir a Supabase
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: python upload_to_supabase.py
