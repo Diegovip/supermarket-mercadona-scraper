@@ -23,5 +23,4 @@ jobs:
 
       - name: Ejecutar scraper
         run: |
-          cd supermarket-mercadona-scraper
           python scrape.py
