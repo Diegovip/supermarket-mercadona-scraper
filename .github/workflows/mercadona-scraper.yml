@@ -9,10 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v3
-          with:
-    clean: false
+      - uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -20,18 +17,19 @@ jobs:
           python-version: '3.11'
 
       - name: Instalar dependencias
+        working-directory: supermarket-mercadona-scraper
         run: |
-          pip install -r supermarket-mercadona-scraper/requirements.txt
+          pip install -r requirements.txt
 
-     - name: Ejecutar scraper
-  working-directory: /home/runner/work/supermarket-mercadona-scraper
-  run: |
-    python scraper.py
+      - name: Ejecutar scraper
+        working-directory: supermarket-mercadona-scraper
+        run: |
+          python scrape.py
 
       - name: Subir datos a Supabase
+        working-directory: supermarket-mercadona-scraper
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          cd supermarket-mercadona-scraper
           python upload_to_supabase.py
