@@ -1,16 +1,13 @@
 name: Scrape Mercadona y subir a Supabase
-
 on:
   schedule:
     - cron: '0 6 * * *' # Cada día a las 6am
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Instalar dependencias
         run: |
           pip install -r requirements.txt
