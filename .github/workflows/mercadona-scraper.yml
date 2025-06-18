@@ -21,6 +21,9 @@ jobs:
       - name: Listar contenido carpeta supermarket-mercadona-scraper
         run: ls -la supermarket-mercadona-scraper || echo "No existe esa carpeta"
 
-      - name: Ejecutar scraper
-        run: |
-          python scrape.py
+      - name: Instalar keyboard
+        run: pip install keyboard
+      
+        - name: Ejecutar scraper
+          run: |
+            python scrape.py
