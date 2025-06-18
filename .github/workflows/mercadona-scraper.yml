@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Instalar dependencias
+  run: |
+    cd supermarket-mercadona-scraper
+    pip install -r requirements.txt
       - name: Instalar keyboard
         run: pip install keyboard
         - name: Ejecutar scraper
