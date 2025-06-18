@@ -14,10 +14,8 @@ jobs:
       - name: Instalar dependencias
         run: |
           pip install -r requirements.txt
-
       - name: Instalar keyboard
         run: pip install keyboard
-      
         - name: Ejecutar scraper
           run: |
             python scrape.py
