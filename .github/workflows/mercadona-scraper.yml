@@ -24,7 +24,7 @@ jobs:
           pip install -r supermarket-mercadona-scraper/requirements.txt
 
      - name: Ejecutar scraper
-  working-directory: ./supermarket-mercadona-scraper
+  working-directory: /home/runner/work/supermarket-mercadona-scraper
   run: |
     python scraper.py
 
