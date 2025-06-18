@@ -12,14 +12,14 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Listar contenido raíz
-        run: ls -l
+        run: ls -la
 
       - name: Listar contenido carpeta principal
-        run: ls -l supermarket-mercadona-scraper || echo "No existe esa carpeta"
+        run: ls -la supermarket-mercadona-scraper || echo "No existe esa carpeta"
 
       - name: Listar contenido carpeta anidada
-        run: ls -l supermarket-mercadona-scraper/supermarket-mercadona-scraper || echo "No existe esa carpeta"
-
+        run: ls -la supermarket-mercadona-scraper/supermarket-mercadona-scraper || echo "No existe esa carpeta"
+        
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
