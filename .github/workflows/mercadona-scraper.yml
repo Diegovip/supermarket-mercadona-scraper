@@ -1,19 +1,25 @@
 name: Scrape Mercadona y subir a Supabase
+
 on:
   schedule:
     - cron: '0 6 * * *' # Cada día a las 6am
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Instalar dependencias
-  run: |
-    cd supermarket-mercadona-scraper
-    pip install -r requirements.txt
+        run: |
+          cd supermarket-mercadona-scraper
+          pip install -r requirements.txt
+
       - name: Instalar keyboard
         run: pip install keyboard
-        - name: Ejecutar scraper
-          run: |
-            python scrape.py
+
+      - name: Ejecutar scraper
+        run: |
+          cd supermarket-mercadona-scraper
+          python scrape.py
