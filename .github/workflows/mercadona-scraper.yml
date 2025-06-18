@@ -11,26 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Listar contenido raíz
-        run: ls -la
-
-      - name: Listar contenido carpeta principal
-        run: ls -la supermarket-mercadona-scraper || echo "No existe esa carpeta"
-
-      - name: Listar contenido carpeta anidada
-        run: ls -la supermarket-mercadona-scraper/supermarket-mercadona-scraper || echo "No existe esa carpeta"
-        
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
       - name: Instalar dependencias
         run: |
           pip install -r requirements.txt
 
+      - name: Listar contenido raíz
+        run: ls -la
+
+      - name: Listar contenido carpeta supermarket-mercadona-scraper
+        run: ls -la supermarket-mercadona-scraper || echo "No existe esa carpeta"
+
       - name: Ejecutar scraper
         run: |
           cd supermarket-mercadona-scraper
-          ls -la
           python scrape.py
