@@ -15,12 +15,6 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Listar contenido raíz
-        run: ls -la
-
-      - name: Listar contenido carpeta supermarket-mercadona-scraper
-        run: ls -la supermarket-mercadona-scraper || echo "No existe esa carpeta"
-
       - name: Instalar keyboard
         run: pip install keyboard
       
