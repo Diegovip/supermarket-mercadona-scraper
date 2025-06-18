@@ -23,11 +23,13 @@ jobs:
 
       - name: Ejecutar scraper
         run: |
-          python supermarket-mercadona-scraper/scrape.py
+          cd supermarket-mercadona-scraper
+          python scrape.py
 
       - name: Subir datos a Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          python supermarket-mercadona-scraper/upload_to_supabase.py
+          cd supermarket-mercadona-scraper
+          python upload_to_supabase.py
