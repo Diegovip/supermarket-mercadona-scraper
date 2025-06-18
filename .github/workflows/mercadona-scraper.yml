@@ -11,13 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Listar contenido raíz
+        run: ls -la
+
+      - name: Listar contenido carpeta scraper
+        run: ls -la supermarket-mercadona-scraper
+
       - name: Instalar dependencias
         run: |
           cd supermarket-mercadona-scraper
           pip install -r requirements.txt
-
-      - name: Instalar keyboard
-        run: pip install keyboard
 
       - name: Ejecutar scraper
         run: |
