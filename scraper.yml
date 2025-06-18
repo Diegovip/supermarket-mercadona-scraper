@@ -12,24 +12,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
-      - name: Cambiar a directorio del repo
-        run: cd supermarket-mercadona-scraper && ls -la
-        
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-     - name: Instalar dependencias
-  run: cd supermarket-mercadona-scraper && pip install -r requirements.txt supabase
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt supabase
+        working-directory: supermarket-mercadona-scraper
 
-    - name: Ejecutar scraper
-      run: cd supermarket-mercadona-scraper && python scrape.py
-    
-    - name: Subir a Supabase
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-      run: cd supermarket-mercadona-scraper && python upload_to_supabase.py
-    💡 Alternativa más limpia (opcional)
+      - name: Ejecutar scraper
+        run: python scrape.py
+        working-directory: supermarket-mercadona-scraper
+
+      - name: Subir a Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python upload_to_supabase.py
+        working-directory: supermarket-mercadona-scraper
