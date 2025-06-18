@@ -28,7 +28,14 @@ jobs:
       - name: Instalar dependencias
         run: |
           pip install -r requirements.txt
+          
+- name: Listar contenido raíz
+  run: ls -la
 
-      - name: Ejecutar scraper (sin cambiar directorio)
-        run: |
-          python scrape.py  # Asegúrate de que scrape.py guarda en un CSV o JSON
+- name: Listar contenido carpeta supermarket-mercadona-scraper
+  run: ls -la supermarket-mercadona-scraper
+
+- name: Ejecutar scraper
+  run: |
+    cd supermarket-mercadona-scraper
+    python scrape.py
