@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Instalar dependencias
         run: |
-          pip install -r requirements.txt
+          pip install -r supermarket-mercadona-scraper/requirements.txt
       - name: Instalar keyboard
         run: pip install keyboard
         - name: Ejecutar scraper
