@@ -2,28 +2,25 @@ name: Scrape Mercadona y subir a Supabase
 
 on:
   schedule:
-    - cron: '0 6 * * *' # Cada día a las 6am
+    - cron: '0 6 * * *'  # Cada día a las 6am
   workflow_dispatch:
 
 jobs:
-  build:
+  scrape:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout del código
+        uses: actions/checkout@v3
 
-      - name: Ver contenido real del repositorio
+      - name: Mostrar estructura de carpetas
         run: |
-          echo "Estructura visible por GitHub Actions:"
+          echo "Raíz del repo:"
           pwd
+          echo "Contenido:"
           ls -la
-          echo "Listado recursivo:"
+          echo "Recursivo:"
           find .
-
-      - name: Listar contenido raíz
-        run: ls -la
-
-      - name: Listar contenido carpeta scraper
-        run: ls -la supermarket-mercadona-scraper
 
       - name: Instalar dependencias
         run: |
