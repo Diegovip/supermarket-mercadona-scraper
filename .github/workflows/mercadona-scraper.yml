@@ -11,6 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Mostrar estructura de carpetas del repo
+      run: |
+        echo "Raíz del repo:"
+        ls -la
+        echo "Estructura completa:"
+        find .
+
       - name: Listar contenido raíz
         run: ls -la
 
