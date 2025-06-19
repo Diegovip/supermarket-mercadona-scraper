@@ -11,12 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Mostrar estructura de carpetas del repo
-      run: |
-        echo "Raíz del repo:"
-        ls -la
-        echo "Estructura completa:"
-        find .
+      - name: Ver contenido real del repositorio
+        run: |
+          echo "Estructura visible por GitHub Actions:"
+          pwd
+          ls -la
+          echo "Listado recursivo:"
+          find .
 
       - name: Listar contenido raíz
         run: ls -la
