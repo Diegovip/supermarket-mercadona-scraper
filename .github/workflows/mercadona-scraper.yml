@@ -20,10 +20,14 @@ jobs:
           ls -la
           find .
 
-- name: Instalar dependencias
-  run: |
-    pip install -r supermarket-mercadona-scraper/requirements.txt
-
+      - name: Instalar dependencias
+        run: |
+          pip install -r supermarket-mercadona-scraper/requirements.txt
+      
+      - name: Verificar selenium instalado
+        run: |
+          pip show selenium
+          
       - name: Ejecutar scraper
         run: |
           python scrape.py
