@@ -1,34 +1,20 @@
-name: Scrape Mercadona y subir a Supabase
+name: Diagnóstico estructura del repo
 
 on:
-  schedule:
-    - cron: '0 6 * * *'  # Cada día a las 6am
   workflow_dispatch:
 
 jobs:
-  scrape:
+  list-files:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout del código
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Mostrar estructura de carpetas
+      - name: Mostrar estructura real
         run: |
-          echo "Contenido raíz:"
+          echo "Estoy en:"
           pwd
+          echo "Contenido del repo:"
           ls -la
-          echo "Contenido supermercado:"
-          ls -la supermarket-mercadona-scraper || echo "No se encuentra"
-
-      - name: Instalar dependencias
-        working-directory: supermarket-mercadona-scraper
-        run: |
-          pip install -r requirements.txt
-
-      - name: Verificar selenium instalado
-        run: pip show selenium || echo "Selenium NO está instalado"
-
-      - name: Ejecutar scraper
-        working-directory: supermarket-mercadona-scraper
-        run: python scrape.py
+          echo "Búsqueda completa:"
+          find .
