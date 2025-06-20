@@ -27,6 +27,9 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Mostrar CSV generado
+        run: ls -l mercadona_*.csv
+
       - name: Verificar selenium instalado
         run: pip show selenium || echo "Selenium NO está instalado"
 
