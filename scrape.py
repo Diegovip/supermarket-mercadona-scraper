@@ -106,29 +106,27 @@ def explorar_categorias(driver):
             except Exception as e:
                 print(f"Advertencia: el modal no desapareció a tiempo o no se encontró. Error: {e}")
 
-
+            # Intentar cerrar modal si sigue visible
             try:
-    # Esperar unos segundos a que desaparezca el modal
-    WebDriverWait(driver, 5).until(
-        EC.invisibility_of_element_located((By.CSS_SELECTOR, 'div[data-testid="mask"]'))
-    )
-except:
-    print("Modal sigue visible, intentando cerrarlo manualmente")
+                WebDriverWait(driver, 5).until(
+                    EC.invisibility_of_element_located((By.CSS_SELECTOR, 'div[data-testid="mask"]'))
+                )
+            except:
+                print("Modal sigue visible, intentando cerrarlo manualmente")
 
-    # Intentar click en botón de cerrar (si existe)
-    try:
-        boton_cerrar = driver.find_element(By.CSS_SELECTOR, 'button[data-testid="close-modal"]')
-        boton_cerrar.click()
-        time.sleep(1)
-    except:
-        pass
+                try:
+                    boton_cerrar = driver.find_element(By.CSS_SELECTOR, 'button[data-testid="close-modal"]')
+                    boton_cerrar.click()
+                    time.sleep(1)
+                except:
+                    pass
 
-    # Si no hay botón, eliminar el modal vía JS para liberar la UI
-    driver.execute_script("""
-        var modal = document.querySelector('div[data-testid="mask"]');
-        if(modal){ modal.style.display='none'; }
-    """)
-    time.sleep(1)
+                # Eliminar modal con JS si no hay botón
+                driver.execute_script("""
+                    var modal = document.querySelector('div[data-testid="mask"]');
+                    if(modal){ modal.style.display='none'; }
+                """)
+                time.sleep(1)
 
             categoria.click()
             time.sleep(random.uniform(0.5, 1))  # Reducido para CI
@@ -148,7 +146,6 @@ except:
             print(f"Error al analizar la categoría {nombre_categoria}: {e}")
     
     return lista_productos
-
 
 if __name__ == "__main__":
     driver = iniciar_driver()
