@@ -4,14 +4,13 @@ import csv
 import time 
 import random 
 import sqlite3
-import keyboard 
 import funcionesAux as fc
 from datetime import datetime
 from bs4 import BeautifulSoup
 from seleniumbase import Driver
 from selenium.webdriver.common.by import By
 
-def mercadona_csv(datos, nombre_archivo="dia.csv"):
+def mercadona_csv(datos, nombre_archivo="output/dia.csv"):
     """
     Guarda los datos en un archivo CSV.
 
@@ -26,6 +25,11 @@ def mercadona_csv(datos, nombre_archivo="dia.csv"):
     columnas = datos[0].keys()
     existe_archivo = os.path.isfile(nombre_archivo)
 
+    # Crear carpeta si no existe
+    carpeta = os.path.dirname(nombre_archivo)
+    if carpeta and not os.path.exists(carpeta):
+        os.makedirs(carpeta)
+
     with open(nombre_archivo, 'a+' if existe_archivo else 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=columnas)
 
@@ -39,13 +43,13 @@ def iniciar_driver():
     driver = Driver(
         browser="chrome",
         uc=True,
-        headless2=False,
+        headless=True,  # headless activo para entornos CI
         incognito=False,
         agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         do_not_track=True,
         undetectable=True
     )
-    driver.maximize_window()
+    # driver.maximize_window()  # Comentado para evitar errores en headless
     return driver
 
 def obtener_datos_productos(driver, categoria):
@@ -89,7 +93,7 @@ def explorar_categorias(driver):
         try:
             nombre_categoria = categoria.text.replace(",", "")
             print(f"\nAnalizando categoría: {nombre_categoria}")
-            time.sleep(random.uniform(1, 3))
+            time.sleep(random.uniform(0.5, 1))  # Reducido para CI
 
             # Esperar a que desaparezca un posible modal antes de hacer clic
             from selenium.webdriver.support.ui import WebDriverWait
@@ -103,16 +107,16 @@ def explorar_categorias(driver):
                 print(f"Advertencia: el modal no desapareció a tiempo o no se encontró. Error: {e}")
 
             categoria.click()
-            time.sleep(random.uniform(1, 3))
+            time.sleep(random.uniform(0.5, 1))  # Reducido para CI
 
             el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
             subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
 
             for subcategoria in subcategorias:
                 print(subcategoria.text)
-                time.sleep(random.uniform(1, 3))
+                time.sleep(random.uniform(0.5, 1))  # Reducido para CI
                 subcategoria.click()
-                time.sleep(random.uniform(1, 3))
+                time.sleep(random.uniform(0.5, 1))  # Reducido para CI
                 productos = obtener_datos_productos(driver, nombre_categoria)
                 lista_productos.extend(productos)
 
@@ -131,7 +135,7 @@ if __name__ == "__main__":
         driver.get("https://tienda.mercadona.es/")
         # Aceptar cookies
         fc.click_element(driver, By.XPATH, "//button[normalize-space()='Aceptar']")
-        time.sleep(3)
+        time.sleep(2)
         
         # Navegar a la sección de categorías
         driver.get("https://tienda.mercadona.es/categories/112")
@@ -140,7 +144,8 @@ if __name__ == "__main__":
         productos = explorar_categorias(driver)
         
         if productos:
-            mercadona_csv(productos, f"mercadona_{fecha}.csv")
+            mercadona_csv(productos, f"output/mercadona_{fecha}.csv")
+            print(f"Datos guardados en output/mercadona_{fecha}.csv")
         else:
             print("No se encontraron productos.")
 
