@@ -13,19 +13,22 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v3
 
-      - name: Configurar Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+      - name: Mostrar estructura de carpetas
+        run: |
+          echo "Contenido raíz:"
+          pwd
+          ls -la
+          echo "Contenido supermercado:"
+          ls -la supermarket-mercadona-scraper || echo "No se encuentra"
 
       - name: Instalar dependencias
+        working-directory: supermarket-mercadona-scraper
         run: |
-          pip install --upgrade pip
-          pip install -r supermarket-mercadona-scraper/requirements.txt
+          pip install -r requirements.txt
 
       - name: Verificar selenium instalado
-        run: |
-          pip show selenium || echo "Selenium NO está instalado"
+        run: pip show selenium || echo "Selenium NO está instalado"
 
       - name: Ejecutar scraper
-        run: python supermarket-mercadona-scraper/scrape.py
+        working-directory: supermarket-mercadona-scraper
+        run: python scrape.py
