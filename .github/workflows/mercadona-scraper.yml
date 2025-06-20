@@ -13,21 +13,19 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v3
 
-      - name: Mostrar estructura del proyecto
-        run: |
-          echo "Contenido raíz:"
-          pwd
-          ls -la
-          find .
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: Instalar dependencias
         run: |
+          pip install --upgrade pip
           pip install -r supermarket-mercadona-scraper/requirements.txt
-      
+
       - name: Verificar selenium instalado
         run: |
-          pip show selenium
-          
+          pip show selenium || echo "Selenium NO está instalado"
+
       - name: Ejecutar scraper
-        run: |
-          python scrape.py
+        run: python supermarket-mercadona-scraper/scrape.py
