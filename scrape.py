@@ -90,24 +90,20 @@ def explorar_categorias(driver):
             nombre_categoria = categoria.text.replace(",", "")
             print(f"\nAnalizando categoría: {nombre_categoria}")
             time.sleep(random.uniform(1, 3))
-           
 
-            # Esperar a que desaparezca el posible modal que bloquea el clic
-try:
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+            # Esperar a que desaparezca un posible modal antes de hacer clic
+            from selenium.webdriver.support.ui import WebDriverWait
+            from selenium.webdriver.support import expected_conditions as EC
 
-    WebDriverWait(driver, 10).until(
-        EC.invisibility_of_element_located((By.CSS_SELECTOR, 'div[data-testid="mask"]'))
-    )
-except:
-    print("No se encontró el modal o no desapareció a tiempo.")
+            try:
+                WebDriverWait(driver, 10).until(
+                    EC.invisibility_of_element_located((By.CSS_SELECTOR, 'div[data-testid="mask"]'))
+                )
+            except Exception as e:
+                print(f"Advertencia: el modal no desapareció a tiempo o no se encontró. Error: {e}")
 
-# Intentar hacer clic en la categoría
-categoria.click()
-time.sleep(random.uniform(1, 3))
-
-
+            categoria.click()
+            time.sleep(random.uniform(1, 3))
 
             el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
             subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
@@ -124,6 +120,7 @@ time.sleep(random.uniform(1, 3))
             print(f"Error al analizar la categoría {nombre_categoria}: {e}")
     
     return lista_productos
+
 
 if __name__ == "__main__":
     driver = iniciar_driver()
