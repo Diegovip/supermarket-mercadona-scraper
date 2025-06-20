@@ -20,9 +20,9 @@ jobs:
           ls -la
           find .
 
-      - name: Instalar dependencias
-        run: |
-          pip install -r requirements.txt
+- name: Instalar dependencias
+  run: |
+    pip install -r supermarket-mercadona-scraper/requirements.txt
 
       - name: Ejecutar scraper
         run: |
