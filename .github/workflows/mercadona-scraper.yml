@@ -10,11 +10,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Mostrar estructura real
+      - name: Mostrar estructura real del proyecto
         run: |
-          echo "Estoy en:"
+          echo "Directorio actual:"
           pwd
-          echo "Contenido del repo:"
+          echo "Contenido del directorio actual:"
           ls -la
-          echo "Búsqueda completa:"
+          echo "Contenido completo del repositorio:"
           find .
+      
+
