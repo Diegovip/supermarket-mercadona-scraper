@@ -34,7 +34,7 @@ def iniciar_driver():
     driver = Driver(
         browser="chrome",
         uc=True,
-        headless=True,
+        headless=True,  # Cambia a False si quieres ver el navegador
         incognito=False,
         agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         do_not_track=True,
@@ -76,57 +76,58 @@ def explorar_categorias(driver):
     lista_productos = []
     categorias = fc.wait_for_elements(driver, By.CSS_SELECTOR, '.category-menu__header', multiple=True)
 
+    # Asegurar carpeta de errores
+    os.makedirs("errors", exist_ok=True)
+
     for categoria in categorias:
-    try:
-        nombre_categoria = categoria.text.replace(",", "")
-        print(f"\nAnalizando categoría: {nombre_categoria}")
-        time.sleep(random.uniform(0.3, 0.6))
-
-        # 🔴 Fuerza bruta: elimina cualquier modal, overlay y scroll-blocker
-        driver.execute_script("""
-            document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
-            document.body.classList.remove('overflow-hidden');
-            document.documentElement.classList.remove('overflow-hidden');
-        """)
-        time.sleep(0.5)
-
-        # Scroll al elemento y espera explícita
-        driver.execute_script("arguments[0].scrollIntoView(true);", categoria)
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{nombre_categoria}']")))
-
-        # Segundo intento de limpieza justo antes del clic
-        driver.execute_script("""
-            document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
-        """)
-        time.sleep(0.2)
-
         try:
-            categoria.click()
-        except Exception as e:
-            print("⚠️ Primer intento de clic fallido, eliminando modal nuevamente y reintentando.")
-            driver.execute_script("""
-                document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
-            """)
-            time.sleep(0.5)
-            categoria.click()
+            nombre_categoria = categoria.text.replace(",", "")
+            print(f"\nAnalizando categoría: {nombre_categoria}")
+            time.sleep(random.uniform(0.3, 0.6))
 
-        print(f"✓ Clic realizado en categoría: {nombre_categoria}")
-        time.sleep(random.uniform(0.5, 1))
+            # Scroll al elemento y espera de clicabilidad
+            driver.execute_script("arguments[0].scrollIntoView(true);", categoria)
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{nombre_categoria}']")))
 
-        el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
-        subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
+            # Reintento de clic con limpieza de modal
+            clic_realizado = False
+            for intento in range(3):
+                try:
+                    driver.execute_script("""
+                        document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
+                        document.body.classList.remove('overflow-hidden');
+                        document.documentElement.classList.remove('overflow-hidden');
+                    """)
+                    time.sleep(0.4 + intento * 0.3)
 
-        for subcategoria in subcategorias:
-            print(f" > Subcategoría: {subcategoria.text}")
-            subcategoria.click()
+                    categoria.click()
+                    clic_realizado = True
+                    print(f"✓ Clic realizado en categoría: {nombre_categoria} (intento {intento + 1})")
+                    break
+                except Exception as e:
+                    print(f"⚠️ Intento {intento + 1} fallido: {e}")
+                    time.sleep(0.5)
+
+            if not clic_realizado:
+                with open(f"errors/dom_error_{nombre_categoria}.html", "w", encoding="utf-8") as f:
+                    f.write(driver.page_source)
+                driver.save_screenshot(f"errors/error_{nombre_categoria}.png")
+                raise Exception(f"No se pudo clicar en la categoría {nombre_categoria} tras 3 intentos")
+
             time.sleep(random.uniform(0.5, 1))
-            productos = obtener_datos_productos(driver, nombre_categoria)
-            lista_productos.extend(productos)
 
-    except Exception as e:
-        print(f"⚠️ Error al analizar la categoría {nombre_categoria}: {e}")
-        driver.save_screenshot(f"errors/error_{nombre_categoria}.png")
+            el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
+            subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
 
+            for subcategoria in subcategorias:
+                print(f" > Subcategoría: {subcategoria.text}")
+                subcategoria.click()
+                time.sleep(random.uniform(0.5, 1))
+                productos = obtener_datos_productos(driver, nombre_categoria)
+                lista_productos.extend(productos)
+
+        except Exception as e:
+            print(f"⚠️ Error al analizar la categoría {nombre_categoria}: {e}")
 
     return lista_productos
 
@@ -137,11 +138,9 @@ if __name__ == "__main__":
         print(f"Iniciando escaneo a fecha: {datetime.now()}")
 
         driver.get("https://tienda.mercadona.es/")
-        # Aceptar cookies
         fc.click_element(driver, By.XPATH, "//button[normalize-space()='Aceptar']")
         time.sleep(2)
 
-        # Navegar a la sección de categorías
         driver.get("https://tienda.mercadona.es/categories/112")
 
         productos = explorar_categorias(driver)
