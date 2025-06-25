@@ -90,61 +90,53 @@ def explorar_categorias(driver):
     categorias = fc.wait_for_elements(driver, By.CSS_SELECTOR, '.category-menu__header', multiple=True)
     
     for categoria in categorias: 
+    try:
+        nombre_categoria = categoria.text.replace(",", "")
+        print(f"\nAnalizando categoría: {nombre_categoria}")
+        time.sleep(random.uniform(0.5, 1))
+
+        # Esperar a que desaparezca cualquier modal visible
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+
         try:
-            nombre_categoria = categoria.text.replace(",", "")
-            print(f"\nAnalizando categoría: {nombre_categoria}")
-            time.sleep(random.uniform(0.5, 1))  # Reducido para CI
-
-            # Esperar a que desaparezca un posible modal antes de hacer clic
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
-
+            WebDriverWait(driver, 5).until(
+                EC.invisibility_of_element_located((By.CSS_SELECTOR, 'div.modal, div[data-testid="modal"], div[data-testid="mask"]'))
+            )
+        except Exception as e:
+            print(f"Modal aún visible. Intentando forzar su cierre. Error: {e}")
             try:
-                WebDriverWait(driver, 10).until(
-                    EC.invisibility_of_element_located((By.CSS_SELECTOR, 'div[data-testid="mask"]'))
-                )
-            except Exception as e:
-                print(f"Advertencia: el modal no desapareció a tiempo o no se encontró. Error: {e}")
-
-            # Intentar cerrar modal si sigue visible
-            try:
-                WebDriverWait(driver, 5).until(
-                    EC.invisibility_of_element_located((By.CSS_SELECTOR, 'div[data-testid="mask"]'))
-                )
+                boton_cerrar = driver.find_element(By.CSS_SELECTOR, 'button[data-testid="close-modal"], .modal button.close')
+                boton_cerrar.click()
+                time.sleep(1)
             except:
-                print("Modal sigue visible, intentando cerrarlo manualmente")
-
-                try:
-                    boton_cerrar = driver.find_element(By.CSS_SELECTOR, 'button[data-testid="close-modal"]')
-                    boton_cerrar.click()
-                    time.sleep(1)
-                except:
-                    pass
-
-                # Eliminar modal con JS si no hay botón
+                print("No se encontró botón de cierre. Ocultando modal con JavaScript.")
                 driver.execute_script("""
-                    var modal = document.querySelector('div[data-testid="mask"]');
-                    if(modal){ modal.style.display='none'; }
+                    document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
                 """)
                 time.sleep(1)
 
-            categoria.click()
-            time.sleep(random.uniform(0.5, 1))  # Reducido para CI
+        # Esperar a que la categoría esté clicable
+        WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, f"//span[text()='{nombre_categoria}']"))
+        )
+        categoria.click()
+        time.sleep(random.uniform(0.5, 1))
 
-            el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
-            subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
+        # Continuar con subcategorías
+        el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
+        subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
 
-            for subcategoria in subcategorias:
-                print(subcategoria.text)
-                time.sleep(random.uniform(0.5, 1))  # Reducido para CI
-                subcategoria.click()
-                time.sleep(random.uniform(0.5, 1))  # Reducido para CI
-                productos = obtener_datos_productos(driver, nombre_categoria)
-                lista_productos.extend(productos)
+        for subcategoria in subcategorias:
+            print(subcategoria.text)
+            subcategoria.click()
+            time.sleep(random.uniform(0.5, 1))
+            productos = obtener_datos_productos(driver, nombre_categoria)
+            lista_productos.extend(productos)
 
-        except Exception as e:
-            print(f"Error al analizar la categoría {nombre_categoria}: {e}")
-    
+    except Exception as e:
+        print(f"Error al analizar la categoría {nombre_categoria}: {e}")
+
     return lista_productos
 
 if __name__ == "__main__":
