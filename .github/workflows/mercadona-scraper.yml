@@ -40,3 +40,14 @@ jobs:
 
       - name: Ejecutar scraper
         run: python scrape.py
+
+      - name: Listar contenido de output/
+        run: ls -lh output/
+      
+      - name: Subir CSV generado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-scraping
+          path: output/
+
