@@ -27,6 +27,14 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Subir CSV generado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-scraping
+          path: output/
+
+
       - name: Verificar selenium instalado
         run: pip show selenium || echo "Selenium NO está instalado"
 
