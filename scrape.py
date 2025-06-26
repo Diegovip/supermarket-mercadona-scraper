@@ -1,16 +1,14 @@
 import os 
-import re
 import csv
 import time 
 import random 
-import sqlite3
-import funcionesAux as fc
 from datetime import datetime
 from bs4 import BeautifulSoup
 from seleniumbase import Driver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import funcionesAux as fc
 
 def mercadona_csv(datos, nombre_archivo="output/dia.csv"):
     if not datos:
@@ -34,7 +32,7 @@ def iniciar_driver():
     driver = Driver(
         browser="chrome",
         uc=True,
-        headless=True,  # Cambia a False si quieres ver el navegador
+        headless=False,  # ⚠️ CAMBIA A TRUE SI LO USAS EN SERVIDOR CI
         incognito=False,
         agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         do_not_track=True,
@@ -76,20 +74,17 @@ def explorar_categorias(driver):
     lista_productos = []
     categorias = fc.wait_for_elements(driver, By.CSS_SELECTOR, '.category-menu__header', multiple=True)
 
-    # Asegurar carpeta de errores
     os.makedirs("errors", exist_ok=True)
 
     for categoria in categorias:
         try:
             nombre_categoria = categoria.text.replace(",", "")
-            print(f"\nAnalizando categoría: {nombre_categoria}")
+            print(f"\n🔍 Analizando categoría: {nombre_categoria}")
             time.sleep(random.uniform(0.3, 0.6))
 
-            # Scroll al elemento y espera de clicabilidad
             driver.execute_script("arguments[0].scrollIntoView(true);", categoria)
             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{nombre_categoria}']")))
 
-            # Reintento de clic con limpieza de modal
             clic_realizado = False
             for intento in range(3):
                 try:
@@ -100,18 +95,20 @@ def explorar_categorias(driver):
                     """)
                     time.sleep(0.4 + intento * 0.3)
 
-                    categoria.click()
+                    print(f"Intentando clic en categoría (intento {intento+1})...")
+                    try:
+                        categoria.click()
+                    except:
+                        driver.execute_script("arguments[0].click();", categoria)
+                    
                     clic_realizado = True
-                    print(f"✓ Clic realizado en categoría: {nombre_categoria} (intento {intento + 1})")
+                    print(f"✅ Clic realizado en categoría: {nombre_categoria}")
                     break
                 except Exception as e:
-                    print(f"⚠️ Intento {intento + 1} fallido: {e}")
+                    print(f"⚠️ Intento {intento+1} fallido: {e}")
                     time.sleep(0.5)
 
             if not clic_realizado:
-                with open(f"errors/dom_error_{nombre_categoria}.html", "w", encoding="utf-8") as f:
-                    f.write(driver.page_source)
-                driver.save_screenshot(f"errors/error_{nombre_categoria}.png")
                 raise Exception(f"No se pudo clicar en la categoría {nombre_categoria} tras 3 intentos")
 
             time.sleep(random.uniform(0.5, 1))
@@ -127,7 +124,14 @@ def explorar_categorias(driver):
                 lista_productos.extend(productos)
 
         except Exception as e:
-            print(f"⚠️ Error al analizar la categoría {nombre_categoria}: {e}")
+            print(f"❌ Error al analizar la categoría {nombre_categoria}: {e}")
+            html_path = f"errors/dom_error_{nombre_categoria.replace(' ', '_')}.html"
+            img_path = f"errors/error_{nombre_categoria.replace(' ', '_')}.png"
+            with open(html_path, "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            driver.save_screenshot(img_path)
+            print(f"📄 Guardado HTML: {html_path}")
+            print(f"📷 Guardado Screenshot: {img_path}")
 
     return lista_productos
 
@@ -135,7 +139,7 @@ if __name__ == "__main__":
     driver = iniciar_driver()
     try:
         fecha = datetime.now().date()
-        print(f"Iniciando escaneo a fecha: {datetime.now()}")
+        print(f"🚀 Iniciando escaneo a fecha: {datetime.now()}")
 
         driver.get("https://tienda.mercadona.es/")
         fc.click_element(driver, By.XPATH, "//button[normalize-space()='Aceptar']")
@@ -147,11 +151,11 @@ if __name__ == "__main__":
 
         if productos:
             mercadona_csv(productos, f"output/mercadona_{fecha}.csv")
-            print(f"Datos guardados en output/mercadona_{fecha}.csv")
+            print(f"✅ Datos guardados en output/mercadona_{fecha}.csv")
         else:
-            print("No se encontraron productos.")
+            print("⚠️ No se encontraron productos.")
 
     except Exception as e:
-        print(f"❌ Error durante el proceso de scraping: {e}")
+        print(f"🔥 Error durante el proceso de scraping: {e}")
     finally:
         driver.quit()
