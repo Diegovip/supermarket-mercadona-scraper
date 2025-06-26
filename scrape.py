@@ -32,13 +32,34 @@ def iniciar_driver():
     driver = Driver(
         browser="chrome",
         uc=True,
-        headless=False,  # ⚠️ CAMBIA A TRUE SI LO USAS EN SERVIDOR CI
+        headless=True,  # True para CI/CD
         incognito=False,
         agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         do_not_track=True,
         undetectable=True
     )
     return driver
+
+def safe_click(driver, elemento, nombre="elemento", intentos=3):
+    for i in range(intentos):
+        try:
+            if not elemento.is_displayed():
+                print(f"{nombre} no visible, intento JS click...")
+                driver.execute_script("arguments[0].click();", elemento)
+            else:
+                elemento.click()
+            return True
+        except Exception as e:
+            print(f"❌ Error clic en {nombre} (intento {i+1}): {e}")
+            time.sleep(0.5)
+    
+    ts = int(time.time())
+    os.makedirs("errors", exist_ok=True)
+    driver.save_screenshot(f"errors/{nombre}_{ts}.png")
+    with open(f"errors/{nombre}_{ts}.html", "w", encoding="utf-8") as f:
+        f.write(driver.page_source)
+    print(f"📷 Screenshot y HTML guardados para {nombre}")
+    return False
 
 def obtener_datos_productos(driver, categoria):
     productos = []
@@ -73,76 +94,46 @@ def obtener_datos_productos(driver, categoria):
 def explorar_categorias(driver):
     lista_productos = []
     categorias = fc.wait_for_elements(driver, By.CSS_SELECTOR, '.category-menu__header', multiple=True)
-
     os.makedirs("errors", exist_ok=True)
 
     for categoria in categorias:
         try:
-            nombre_categoria = categoria.text.replace(",", "")
+            nombre_categoria = categoria.text.replace(",", "").replace(" ", "_")
             print(f"\n🔍 Analizando categoría: {nombre_categoria}")
-            time.sleep(random.uniform(0.3, 0.6))
+            time.sleep(random.uniform(0.4, 0.6))
 
             driver.execute_script("arguments[0].scrollIntoView(true);", categoria)
-            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{nombre_categoria}']")))
+            time.sleep(0.5)
 
-            clic_realizado = False
-            for intento in range(3):
-                try:
-                    driver.execute_script("""
-                        document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
-                        document.body.classList.remove('overflow-hidden');
-                        document.documentElement.classList.remove('overflow-hidden');
-                    """)
-                    time.sleep(0.4 + intento * 0.3)
+            driver.execute_script("""
+                document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
+                document.body.classList.remove('overflow-hidden');
+                document.documentElement.classList.remove('overflow-hidden');
+            """)
 
-               print(f"Intentando clic en categoría '{nombre_categoria}' (intento {intento+1})...")
-            try:
-                # Comprobar visibilidad real
-                if not categoria.is_displayed():
-                    print(f"Elemento no visible. Forzando clic por JS.")
-                    driver.execute_script("arguments[0].click();", categoria)
-                else:
-                    categoria.click()
-            except Exception as e_click:
-                print(f"⚠️ Fallback JS click por error: {e_click}")
-                try:
-                    driver.execute_script("arguments[0].click();", categoria)
-                except Exception as e_js:
-                    print(f"❌ JS click también falló: {e_js}")
-                    raise
+            if not safe_click(driver, categoria, nombre=f"categoria_{nombre_categoria}"):
+                print(f"🚫 No se pudo hacer clic en la categoría {nombre_categoria}")
+                continue
 
-                    
-                    clic_realizado = True
-                    print(f"✅ Clic realizado en categoría: {nombre_categoria}")
-                    break
-                except Exception as e:
-                    print(f"⚠️ Intento {intento+1} fallido: {e}")
-                    time.sleep(0.5)
-
-            if not clic_realizado:
-                raise Exception(f"No se pudo clicar en la categoría {nombre_categoria} tras 3 intentos")
-
-            time.sleep(random.uniform(0.5, 1))
-
+            time.sleep(1)
             el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
             subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
 
             for subcategoria in subcategorias:
-                print(f" > Subcategoría: {subcategoria.text}")
-                subcategoria.click()
-                time.sleep(random.uniform(0.5, 1))
+                nombre_sub = subcategoria.text.replace(" ", "_")
+                print(f" > Subcategoría: {nombre_sub}")
+                if not safe_click(driver, subcategoria, nombre=f"subcategoria_{nombre_sub}"):
+                    continue
+                time.sleep(0.8)
                 productos = obtener_datos_productos(driver, nombre_categoria)
                 lista_productos.extend(productos)
 
         except Exception as e:
-            print(f"❌ Error al analizar la categoría {nombre_categoria}: {e}")
-            html_path = f"errors/dom_error_{nombre_categoria.replace(' ', '_')}.html"
-            img_path = f"errors/error_{nombre_categoria.replace(' ', '_')}.png"
-            with open(html_path, "w", encoding="utf-8") as f:
+            print(f"❌ Error en categoría {nombre_categoria}: {e}")
+            ts = int(time.time())
+            driver.save_screenshot(f"errors/error_{nombre_categoria}_{ts}.png")
+            with open(f"errors/error_{nombre_categoria}_{ts}.html", "w", encoding="utf-8") as f:
                 f.write(driver.page_source)
-            driver.save_screenshot(img_path)
-            print(f"📄 Guardado HTML: {html_path}")
-            print(f"📷 Guardado Screenshot: {img_path}")
 
     return lista_productos
 
@@ -153,8 +144,15 @@ if __name__ == "__main__":
         print(f"🚀 Iniciando escaneo a fecha: {datetime.now()}")
 
         driver.get("https://tienda.mercadona.es/")
-        fc.click_element(driver, By.XPATH, "//button[normalize-space()='Aceptar']")
         time.sleep(2)
+
+        # Aceptar cookies
+        try:
+            boton_cookies = fc.wait_for_elements(driver, By.XPATH, "//button[normalize-space()='Aceptar']", multiple=False)
+            safe_click(driver, boton_cookies, nombre="boton_aceptar_cookies")
+            time.sleep(2)
+        except Exception as e:
+            print(f"⚠️ No se pudo hacer clic en cookies: {e}")
 
         driver.get("https://tienda.mercadona.es/categories/112")
 
@@ -167,6 +165,6 @@ if __name__ == "__main__":
             print("⚠️ No se encontraron productos.")
 
     except Exception as e:
-        print(f"🔥 Error durante el proceso de scraping: {e}")
+        print(f"🔥 Error general del scraping: {e}")
     finally:
         driver.quit()
