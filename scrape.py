@@ -168,3 +168,9 @@ if __name__ == "__main__":
         print(f"🔥 Error general del scraping: {e}")
     finally:
         driver.quit()
+- name: Subir CSV generado
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: resultado-scraping
+    path: output/
