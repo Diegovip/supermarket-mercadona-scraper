@@ -1,58 +1,79 @@
 import os 
-import re
 import csv
 import time 
 import random 
-import sqlite3
-import keyboard 
-import funcionesAux as fc
+from pathlib import Path
 from datetime import datetime
 from bs4 import BeautifulSoup
 from seleniumbase import Driver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import funcionesAux as fc  # Asegúrate de tener este archivo en el mismo directorio
 
-def mercadona_csv(datos, nombre_archivo="dia.csv"):
-    """
-    Guarda los datos en un archivo CSV.
 
-    Parámetros:
-    datos -- Lista de diccionarios con los datos a guardar.
-    nombre_archivo -- Nombre del archivo CSV a crear.
-    """
+def mercadona_csv(datos, nombre_archivo):
     if not datos:
         print("No hay datos para guardar.")
         return
-    
+
+    nombre_archivo = os.path.abspath(nombre_archivo)
+    print(f"📝 Guardando archivo en: {nombre_archivo}")
+
     columnas = datos[0].keys()
-    existe_archivo = os.path.isfile(nombre_archivo)
+    carpeta = os.path.dirname(nombre_archivo)
+    os.makedirs(carpeta, exist_ok=True)
 
-    with open(nombre_archivo, 'a+' if existe_archivo else 'w', newline='', encoding='utf-8') as f:
+    with open(nombre_archivo, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=columnas)
-
-        if not existe_archivo:
-            writer.writeheader()
-
+        writer.writeheader()
         writer.writerows(datos)
 
+    if os.path.exists(nombre_archivo):
+        print(f"✅ Archivo guardado correctamente: {nombre_archivo}")
+    else:
+        print("❌ El archivo no se creó correctamente.")
+
+
 def iniciar_driver():
-    """Inicia el driver de Selenium con las configuraciones necesarias."""
     driver = Driver(
         browser="chrome",
         uc=True,
-        headless2=False,
+        headless=True,  # Para CI/CD
         incognito=False,
         agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         do_not_track=True,
         undetectable=True
     )
-    driver.maximize_window()
     return driver
 
+
+def safe_click(driver, elemento, nombre="elemento", intentos=3):
+    for i in range(intentos):
+        try:
+            if not elemento.is_displayed():
+                print(f"{nombre} no visible, intentando JS click...")
+                driver.execute_script("arguments[0].click();", elemento)
+            else:
+                elemento.click()
+            return True
+        except Exception as e:
+            print(f"❌ Error clic en {nombre} (intento {i+1}): {e}")
+            time.sleep(0.5)
+    
+    ts = int(time.time())
+    os.makedirs("errors", exist_ok=True)
+    driver.save_screenshot(f"errors/{nombre}_{ts}.png")
+    with open(f"errors/{nombre}_{ts}.html", "w", encoding="utf-8") as f:
+        f.write(driver.page_source)
+    print(f"📷 Captura y HTML guardados para {nombre}")
+    return False
+
+
 def obtener_datos_productos(driver, categoria):
-    """Obtiene los datos de los productos dentro de una categoría."""
     productos = []
     elemento_productos = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'div.product-cell[data-testid="product-cell"]', multiple=True)
-    print(f"Total productos encontrados: {len(elemento_productos)}")
+    print(f"🔎 Total productos encontrados: {len(elemento_productos)}")
 
     for anuncio in elemento_productos: 
         html_content = anuncio.get_attribute('innerHTML')
@@ -70,7 +91,7 @@ def obtener_datos_productos(driver, categoria):
         
         precio = p_element.text.replace(".", "").replace(",", ".").replace("€", "").strip() if p_element else "Precio no disponible"
 
-        print(f"Producto: {titulo}\nImagen: {imagen}\nPrecio: {precio}")
+        print(f"🛒 Producto: {titulo}\n🖼️ Imagen: {imagen}\n💶 Precio: {precio}")
         productos.append({
             'titulo': titulo,
             'imagen': imagen,
@@ -79,60 +100,82 @@ def obtener_datos_productos(driver, categoria):
         })
     return productos
 
-def explorar_categorias(driver):
-    """Explora las categorías en la página y extrae los datos de cada producto."""
-    lista_productos = []
-    
-    categorias = fc.wait_for_elements(driver, By.CSS_SELECTOR, '.category-menu__header', multiple=True)
-    
-    for categoria in categorias: 
-        try:
-            nombre_categoria = categoria.text.replace(",", "")
-            print(f"\nAnalizando categoría: {nombre_categoria}")
-            time.sleep(random.uniform(1, 3))
-            categoria.click()
-            time.sleep(random.uniform(1, 3))
 
+def explorar_categorias(driver):
+    lista_productos = []
+    categorias = fc.wait_for_elements(driver, By.CSS_SELECTOR, '.category-menu__header', multiple=True)
+    os.makedirs("errors", exist_ok=True)
+
+    for categoria in categorias:
+        try:
+            nombre_categoria = categoria.text.replace(",", "").replace(" ", "_")
+            print(f"\n🔍 Analizando categoría: {nombre_categoria}")
+            time.sleep(random.uniform(0.4, 0.6))
+
+            driver.execute_script("arguments[0].scrollIntoView(true);", categoria)
+            time.sleep(0.5)
+
+            driver.execute_script("""
+                document.querySelectorAll('div.modal, div[data-testid="modal"], div[data-testid="mask"]').forEach(el => el.remove());
+                document.body.classList.remove('overflow-hidden');
+                document.documentElement.classList.remove('overflow-hidden');
+            """)
+
+            if not safe_click(driver, categoria, nombre=f"categoria_{nombre_categoria}"):
+                print(f"🚫 No se pudo hacer clic en la categoría {nombre_categoria}")
+                continue
+
+            time.sleep(1)
             el_category = fc.wait_for_elements(driver, By.CSS_SELECTOR, 'li.category-menu__item.open', multiple=False)
             subcategorias = fc.wait_for_elements(el_category, By.CSS_SELECTOR, 'ul > li.category-item', multiple=True)
 
             for subcategoria in subcategorias:
-                print(subcategoria.text)
-                time.sleep(random.uniform(1, 3))
-                subcategoria.click()
-                time.sleep(random.uniform(1, 3))
+                nombre_sub = subcategoria.text.replace(" ", "_")
+                print(f"   → Subcategoría: {nombre_sub}")
+                if not safe_click(driver, subcategoria, nombre=f"subcategoria_{nombre_sub}"):
+                    continue
+                time.sleep(0.8)
                 productos = obtener_datos_productos(driver, nombre_categoria)
                 lista_productos.extend(productos)
 
         except Exception as e:
-            print(f"Error al analizar la categoría {nombre_categoria}: {e}")
-    
+            print(f"❌ Error en categoría {nombre_categoria}: {e}")
+            ts = int(time.time())
+            driver.save_screenshot(f"errors/error_{nombre_categoria}_{ts}.png")
+            with open(f"errors/error_{nombre_categoria}_{ts}.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+
     return lista_productos
+
 
 if __name__ == "__main__":
     driver = iniciar_driver()
     try:
         fecha = datetime.now().date()
-        print(f"Iniciando escaneo a fecha: {datetime.now()}")
+        print(f"🚀 Iniciando escaneo a fecha: {datetime.now()}")
 
         driver.get("https://tienda.mercadona.es/")
+        time.sleep(2)
+
         # Aceptar cookies
-        fc.click_element(driver, By.XPATH, "//button[normalize-space()='Aceptar']")
-        time.sleep(3)
-        
-        # Navegar a la sección de categorías
+        try:
+            boton_cookies = fc.wait_for_elements(driver, By.XPATH, "//button[normalize-space()='Aceptar']", multiple=False)
+            safe_click(driver, boton_cookies, nombre="boton_aceptar_cookies")
+            time.sleep(2)
+        except Exception as e:
+            print(f"⚠️ No se pudo hacer clic en cookies: {e}")
+
         driver.get("https://tienda.mercadona.es/categories/112")
-        
-        # Extraer datos de las categorías y productos
+
         productos = explorar_categorias(driver)
-        
+
         if productos:
-            mercadona_csv(productos, f"mercadona_{fecha}.csv")
+            output_path = f"output/mercadona_{fecha}.csv"
+            mercadona_csv(productos, output_path)
         else:
-            print("No se encontraron productos.")
+            print("⚠️ No se encontraron productos.")
 
     except Exception as e:
-        print(f"Error durante el proceso de scraping: {e}")
-    
+        print(f"🔥 Error general del scraping: {e}")
     finally:
         driver.quit()
