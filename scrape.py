@@ -95,11 +95,22 @@ def explorar_categorias(driver):
                     """)
                     time.sleep(0.4 + intento * 0.3)
 
-                    print(f"Intentando clic en categoría (intento {intento+1})...")
-                    try:
-                        categoria.click()
-                    except:
-                        driver.execute_script("arguments[0].click();", categoria)
+               print(f"Intentando clic en categoría '{nombre_categoria}' (intento {intento+1})...")
+            try:
+                # Comprobar visibilidad real
+                if not categoria.is_displayed():
+                    print(f"Elemento no visible. Forzando clic por JS.")
+                    driver.execute_script("arguments[0].click();", categoria)
+                else:
+                    categoria.click()
+            except Exception as e_click:
+                print(f"⚠️ Fallback JS click por error: {e_click}")
+                try:
+                    driver.execute_script("arguments[0].click();", categoria)
+                except Exception as e_js:
+                    print(f"❌ JS click también falló: {e_js}")
+                    raise
+
                     
                     clic_realizado = True
                     print(f"✅ Clic realizado en categoría: {nombre_categoria}")
